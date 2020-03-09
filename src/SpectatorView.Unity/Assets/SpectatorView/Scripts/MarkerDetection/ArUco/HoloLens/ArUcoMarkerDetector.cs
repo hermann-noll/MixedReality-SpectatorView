@@ -53,6 +53,7 @@ namespace Microsoft.MixedReality.SpectatorView
         private MarkerDetectionCompletionStrategy _detectionCompletionStrategy;
         private object lockObj = new object();
         private Task setupCameraTask = null;
+        private bool hasBeenEnabled = false;
 
 #pragma warning disable 414 // The field is assigned but its value is never used
         private Dictionary<int, List<Marker>> _markerObservations = null;
@@ -113,6 +114,7 @@ namespace Microsoft.MixedReality.SpectatorView
 #endif
             _markerObservations = new Dictionary<int, List<Marker>>();
 #endif
+            hasBeenEnabled = true;
         }
 
         private void OnDisable()
@@ -166,6 +168,8 @@ namespace Microsoft.MixedReality.SpectatorView
         /// <inheritdoc/>
         public void StartDetecting()
         {
+            if (!hasBeenEnabled)
+                OnEnable();
             enabled = true;
 
 #if UNITY_WSA
@@ -212,8 +216,8 @@ namespace Microsoft.MixedReality.SpectatorView
         /// <inheritdoc />
         public bool TryGetMarkerSize(int markerId, out float size)
         {
-            size = 0.0f;
-            return false;
+            size = _markerSize;
+            return true;
         }
 
         private Task SetupCameraAsync()
@@ -426,7 +430,7 @@ namespace Microsoft.MixedReality.SpectatorView
             positionStandardDeviation = StandardDeviation(allMarkers, averageMarker, marker => (marker.Position - averageMarker.Position).magnitude);
             rotationStandardDeviation = StandardDeviation(allMarkers, averageMarker, marker => Quaternion.Angle(marker.Rotation, averageMarker.Rotation));
         }
-
+        
         private static bool IsMarkerInlier(Marker candidate, Marker averageMarker, double positionStandardDeviation, double rotationStandardDeviation, double markerInlierStandardDeviationThreshold)
         {
             return (candidate.Position - averageMarker.Position).magnitude < markerInlierStandardDeviationThreshold * positionStandardDeviation &&

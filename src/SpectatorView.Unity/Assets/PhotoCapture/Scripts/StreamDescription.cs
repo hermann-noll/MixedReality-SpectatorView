@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.IO;
 
 namespace Microsoft.MixedReality.PhotoCapture
 {
@@ -67,6 +68,21 @@ namespace Microsoft.MixedReality.PhotoCapture
         {
             return !(lhs == rhs);
         }
+
+        public void Write(BinaryWriter writer)
+        {
+            writer.Write(Width);
+            writer.Write(Height);
+            writer.Write(Framerate);
+        }
+
+        public void Read(BinaryReader reader)
+        {
+            Width = reader.ReadUInt32();
+            Height = reader.ReadUInt32();
+            Framerate = reader.ReadDouble();
+        }
+
     }
 
     /// <summary>
@@ -124,6 +140,22 @@ namespace Microsoft.MixedReality.PhotoCapture
         public static bool operator !=(StreamDescription lhs, StreamDescription rhs)
         {
             return !(lhs == rhs);
+        }
+
+        public void Write(BinaryWriter writer)
+        {
+            writer.Write(SourceName);
+            writer.Write(SourceId);
+            Resolution.Write(writer);
+            writer.Write((int)CameraType);
+        }
+
+        public void Read(BinaryReader reader)
+        {
+            SourceName = reader.ReadString();
+            SourceId = reader.ReadString();
+            Resolution.Read(reader);
+            CameraType = (CameraType)reader.ReadInt32();
         }
     }
 }

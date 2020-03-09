@@ -27,7 +27,8 @@ namespace Microsoft.MixedReality.SpectatorView
         /// </summary>
         [Tooltip("QR Code Marker Detector in scene")]
         [SerializeField]
-        protected QRCodeMarkerDetector qrCodeMarkerDetector;
+        protected GameObject markerDetectorGO;
+        private IMarkerDetector qrCodeMarkerDetector => markerDetectorGO.GetComponent<IMarkerDetector>();
 
         /// <summary>
         /// Debug Visual Helper in scene that will place game objects on qr code markers in the scene.
@@ -139,7 +140,11 @@ namespace Microsoft.MixedReality.SpectatorView
                     }
 
                     var originToQRCode = Matrix4x4.TRS(qrCodeTopLeftPosition, qrCodeRotation, Vector3.one);
-                    var arucoTopLeftPosition = originToQRCode.MultiplyPoint(new Vector3(-1.0f * ((2.0f * (size * markerPaddingRatio)) + (size)), 0, 0));
+                    Vector3 arucoTopLeftPosition;
+                    if (qrCodeMarkerDetector is ArUcoMarkerDetector)
+                        arucoTopLeftPosition = qrCodeTopLeftPosition;
+                    else
+                        arucoTopLeftPosition = originToQRCode.MultiplyPoint(new Vector3(-1.0f * ((2.0f * (size * markerPaddingRatio)) + (size)), 0, 0));
                     // We assume that the aruco marker has the same orientation as the qr code marker because they are on the same plane/2d calibration board.
                     var arucoRotation = marker.Value.Rotation;
 

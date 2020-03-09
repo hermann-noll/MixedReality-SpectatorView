@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using SAP.MRS.PhotoCapture;
 
 #if CAN_USE_UWP_TYPES
 using Windows.Media.Devices;
@@ -1109,7 +1110,8 @@ namespace Microsoft.MixedReality.PhotoCapture
                             case CaptureMode.Continuous:
                             case CaptureMode.SingleLowLatency:
                                 {
-                                    if ((sourceInfo.MediaStreamType == MediaStreamType.VideoRecord || sourceInfo.MediaStreamType == MediaStreamType.VideoPreview) && sourceInfo.SourceKind == MediaFrameSourceKind.Color)
+            // do not limit me on  && sourceInfo.SourceKind == MediaFrameSourceKind.Color
+                                    if ((sourceInfo.MediaStreamType == MediaStreamType.VideoRecord || sourceInfo.MediaStreamType == MediaStreamType.VideoPreview))
                                     {
                                         foreach (var setting in sourceInfo.VideoProfileMediaDescription)
                                         {
@@ -1214,7 +1216,14 @@ namespace Microsoft.MixedReality.PhotoCapture
                 frame.PixelFormat = desiredPixelFormat;
                 frame.Resolution = Resolution;
                 frame.FrameTime = frameReference.SystemRelativeTime.HasValue ? frameReference.SystemRelativeTime.Value.TotalSeconds : 0.0;
-                frame.Exposure = frameReference.Duration.TotalSeconds;
+                try
+                {
+                    frame.Exposure = frameReference.Duration.TotalSeconds;
+                }
+                catch (System.Exception)
+                {
+                    frame.Exposure = 1.0f / 15.0f; // on SensorStreaming an exception during get_Duration occurs
+                }
                 frame.Gain = Gain;
 
                 if (KeepSoftwareBitmap)
@@ -1229,6 +1238,11 @@ namespace Microsoft.MixedReality.PhotoCapture
                 // extrinsics and intrinsics
                 frame.Extrinsics = GetExtrinsics(frameReference.CoordinateSystem);
                 frame.Intrinsics = ConvertIntrinsics(frameReference.VideoMediaFrame.CameraIntrinsics);
+
+                if (frameReference.Properties.TryGetValue(SensorCameraIntrinsics.SensorStreaming_CameraIntrinsics, out var rawCameraIntrinsics))
+                {
+                    frame.SensorCameraIntrinsics = new SensorCameraIntrinsics((ISensorCameraIntrinsics)rawCameraIntrinsics);
+                }
             }
 
             frameReference?.Dispose();

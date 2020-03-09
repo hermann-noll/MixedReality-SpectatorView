@@ -127,6 +127,9 @@
     <PreBuildEvent>
       <Command>if EXIST "$(DeckLink_inc)" xcopy /y "$(DeckLink_inc)"</Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>$(SolutionDir)..\..\tools\Scripts\CopyPluginsToUnity.bat</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -169,6 +172,9 @@
     <PreBuildEvent>
       <Command>if EXIST "$(DeckLink_inc)" xcopy /y "$(DeckLink_inc)"</Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>$(SolutionDir)..\..\tools\Scripts\CopyPluginsToUnity.bat</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="PluginAPI\IUnityGraphics.h" />

@@ -78,6 +78,11 @@ namespace Microsoft.MixedReality.PhotoCapture
         public SoftwareBitmap SoftwareBitmap { get; set; }
 #endif
 
+        /// <summary>
+        /// The Camera intrinsics for sensor streaming frames
+        /// </summary>
+        public SAP.MRS.PhotoCapture.SensorCameraIntrinsics SensorCameraIntrinsics { get; set; } = null;
+
         protected int refCount;
 
         /// <summary>
