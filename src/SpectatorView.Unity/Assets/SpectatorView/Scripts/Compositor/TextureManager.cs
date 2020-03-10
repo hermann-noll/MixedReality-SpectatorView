@@ -165,6 +165,7 @@ namespace Microsoft.MixedReality.SpectatorView
         /// The texture used to contain result of running Blur shader over the occulsion mask
         /// </summary>
         public RenderTexture blurOcclusionTexture { get; private set; }
+        public RenderTexture halfBlurOcclusionTexture { get; private set; }
 
         /// <summary>
         /// The raw color image data coming from the capture card
@@ -231,6 +232,8 @@ namespace Microsoft.MixedReality.SpectatorView
         private Material BGRVideoMat;
         private Material holoAlphaMat;
         private Material blurMat;
+        private Material blurHorizontalMat;
+        private Material blurVerticalMat;
         private Material occlusionMaskMat;
         private Material quadViewMat;
         private Material alphaBlendMat;
@@ -336,6 +339,8 @@ namespace Microsoft.MixedReality.SpectatorView
             BGRVideoMat = LoadMaterial("BGRToRGB");
             holoAlphaMat = LoadMaterial("HoloAlpha");
             blurMat = LoadMaterial("Blur");
+            blurHorizontalMat = LoadMaterial("BlurHorizontal");
+            blurVerticalMat = LoadMaterial("BlurVertical");
             occlusionMaskMat = LoadMaterial("OcclusionMask");
             extractAlphaMat = LoadMaterial("ExtractAlpha");
             ignoreAlphaMat = LoadMaterial("IgnoreAlpha");
@@ -369,6 +374,20 @@ namespace Microsoft.MixedReality.SpectatorView
             SetShaderValues();
 
             SetOutputTextures();
+
+            if (GraphicsSettings.renderPipelineAsset.GetType().FullName.Contains("LWRP"))
+            {
+                RenderPipelineManager.beginCameraRendering += (_, cam) =>
+                {
+                    if (cam == spectatorViewCamera)
+                        OnPreRender();
+                };
+                RenderPipelineManager.endCameraRendering += (_, cam) =>
+                {
+                    if (cam == spectatorViewCamera)
+                        StartCoroutine(OnPostRender());
+                };
+            }
         }
 
         private void Update()
@@ -422,6 +441,7 @@ namespace Microsoft.MixedReality.SpectatorView
             compositeTexture = new RenderTexture(frameWidth, frameHeight, (int)Compositor.TextureDepth);
             occlusionMaskTexture = new RenderTexture(frameWidth, frameHeight, (int)Compositor.TextureDepth);
             blurOcclusionTexture = new RenderTexture(frameWidth, frameHeight, (int)Compositor.TextureDepth);
+            halfBlurOcclusionTexture = new RenderTexture(frameWidth, frameHeight, (int)Compositor.TextureDepth);
 
             if (supersampleBuffers.Length > 0)
             {
@@ -490,13 +510,16 @@ namespace Microsoft.MixedReality.SpectatorView
                 occlusionMaskMat.SetTexture("_BodyMaskTexture", bodyMaskTexture);
                 Graphics.Blit(sourceTexture, occlusionMaskTexture, occlusionMaskMat);
 
-                blurMat.SetFloat("_BlurSize", blurSize);
+                blurHorizontalMat.SetFloat("_BlurSize", blurSize);
+                blurVerticalMat.SetFloat("_BlurSize", blurSize);
                 for (int i = 0; i < numBlurPasses || i < 1; i++)
                 {
                     var source = i % 2 == 0 ? occlusionMaskTexture : blurOcclusionTexture;
                     var dest = i % 2 == 0 ? blurOcclusionTexture : occlusionMaskTexture;
-                    blurMat.SetTexture("_MaskTexture", source);
-                    Graphics.Blit(source, dest, blurMat);
+                    blurHorizontalMat.SetTexture("_MaskTexture", source);
+                    Graphics.Blit(source, halfBlurOcclusionTexture, blurHorizontalMat);
+                    blurVerticalMat.SetTexture("_MaskTexture", halfBlurOcclusionTexture);
+                    Graphics.Blit(halfBlurOcclusionTexture, dest, blurVerticalMat);
                 }
 
                 if (numBlurPasses % 2 == 0)
@@ -547,7 +570,7 @@ namespace Microsoft.MixedReality.SpectatorView
             if (ShouldProduceQuadrantVideoFrame)
             {
                 CreateQuadrantTexture();
-                BlitQuadView(renderTexture, alphaTexture, colorRGBTexture, outputTexture, quadViewOutputTexture);
+                BlitQuadView(renderTexture, blurOcclusionTexture, colorRGBTexture, outputTexture, quadViewOutputTexture);
             }
             
             // Video texture.
