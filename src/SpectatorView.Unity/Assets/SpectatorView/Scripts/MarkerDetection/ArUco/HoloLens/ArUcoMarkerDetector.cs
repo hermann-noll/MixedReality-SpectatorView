@@ -105,7 +105,6 @@ namespace Microsoft.MixedReality.SpectatorView
             UpdateDetectionCompletionStrategy();
 
 #if UNITY_WSA
-#if !UNITY_EDITOR
             _api = new SpectatorViewOpenCVInterface();
             if (!_api.Initialize(_markerSize))
             {
@@ -113,7 +112,6 @@ namespace Microsoft.MixedReality.SpectatorView
             }
 #endif
             _markerObservations = new Dictionary<int, List<Marker>>();
-#endif
             hasBeenEnabled = true;
         }
 
@@ -172,7 +170,7 @@ namespace Microsoft.MixedReality.SpectatorView
                 OnEnable();
             enabled = true;
 
-#if UNITY_WSA
+#if UNITY_WSA || UNITY_EDITOR
             if (!_detecting)
             {
                 _detecting = true;
@@ -191,7 +189,7 @@ namespace Microsoft.MixedReality.SpectatorView
             if (_detecting)
             {
                 _detecting = false;
-#if UNITY_WSA
+#if UNITY_WSA || UNITY_EDITOR
                 DebugLog("Stopping ArUco marker detection");
                 CleanUpCameraAsync().FireAndForget();
 #else
