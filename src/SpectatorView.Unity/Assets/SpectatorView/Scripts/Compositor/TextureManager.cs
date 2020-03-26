@@ -407,7 +407,7 @@ namespace Microsoft.MixedReality.SpectatorView
                 return;
             }
             spectatorViewCamera.enabled = true;
-            spectatorViewCamera.clearFlags = CameraClearFlags.Depth;
+            spectatorViewCamera.clearFlags = CameraClearFlags.SolidColor;
             spectatorViewCamera.nearClipPlane = 0.01f;
             spectatorViewCamera.backgroundColor = new Color(0, 0, 0, 0);
             spectatorViewCamera.depthTextureMode = DepthTextureMode.Depth;
@@ -491,21 +491,6 @@ namespace Microsoft.MixedReality.SpectatorView
             else
             {
                 Graphics.Blit(CurrentColorTexture, colorRGBTexture, CurrentColorMaterial);
-            }
-
-            if (IsVideoRecordingQuadrantMode)
-            {
-                // Clear the camera's background by blitting using a shader that simply
-                // clears the target texture without reading from the source texture.
-                // This is applicable for video recording in quadrant mode or for
-                // showing a preview of the quadrant mode on screen.
-                Graphics.Blit(null, spectatorViewCamera.targetTexture, textureClearMat);
-            }
-            else
-            {
-                // Set the input video source as the background for the camera
-                // so that holograms are alpha-blended onto the correct texture
-                Graphics.Blit(colorRGBTexture, spectatorViewCamera.targetTexture);
             }
         }
 
