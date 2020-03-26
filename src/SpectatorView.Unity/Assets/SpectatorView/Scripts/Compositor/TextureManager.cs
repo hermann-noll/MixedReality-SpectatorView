@@ -454,7 +454,9 @@ namespace Microsoft.MixedReality.SpectatorView
         private void SetupRenderPipeline()
         {
             // There seems to still be no macro to tell whether LWRP is used
+            // but the necessary hooks got added in 2019.2(.0a6)
 
+#if UNITY_2019_2_OR_NEWER
             string renderPipeline = GraphicsSettings.renderPipelineAsset?.GetType().FullName ?? "";
             if (renderPipeline.Contains("LWRP"))
             {
@@ -473,6 +475,7 @@ namespace Microsoft.MixedReality.SpectatorView
                         StartCoroutine(OnPostRender());
                 };
             }
+#endif
         }
 
         private void OnPreRender()
@@ -676,7 +679,7 @@ namespace Microsoft.MixedReality.SpectatorView
             UnityCompositorInterface.SetVideoRenderTexture(videoOutputTexture.GetNativeTexturePtr());
         }
 
-        #region UnityExternalTextures
+            #region UnityExternalTextures
         /// <summary>
         /// Create External texture resources and poll for latest Color frame.
         /// </summary>
@@ -761,7 +764,7 @@ namespace Microsoft.MixedReality.SpectatorView
             UnityCompositorInterface.SetOutputRenderTexture(displayOutputTexture.GetNativeTexturePtr());
             UnityCompositorInterface.SetHoloTexture(compositeTexture.GetNativeTexturePtr());
         }
-        #endregion
+            #endregion
 #endif
-    }
+        }
 }
