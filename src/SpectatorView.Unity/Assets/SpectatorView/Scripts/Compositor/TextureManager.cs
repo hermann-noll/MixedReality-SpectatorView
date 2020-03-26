@@ -7,6 +7,7 @@ using System.Collections;
 using System.Runtime.InteropServices;
 using System;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 
 namespace Microsoft.MixedReality.SpectatorView
 {
@@ -230,7 +231,8 @@ namespace Microsoft.MixedReality.SpectatorView
         private Material NV12VideoMat;
         private Material BGRVideoMat;
         private Material holoAlphaMat;
-        private Material blurMat;
+        private Material blurHorizontalMat;
+        private Material blurVerticalMat;
         private Material occlusionMaskMat;
         private Material quadViewMat;
         private Material alphaBlendMat;
@@ -335,7 +337,8 @@ namespace Microsoft.MixedReality.SpectatorView
             NV12VideoMat = LoadMaterial("RGBToNV12");
             BGRVideoMat = LoadMaterial("BGRToRGB");
             holoAlphaMat = LoadMaterial("HoloAlpha");
-            blurMat = LoadMaterial("Blur");
+            blurVerticalMat = LoadMaterial("BlurVertical");
+            blurHorizontalMat = LoadMaterial("BlurHorizontal");
             occlusionMaskMat = LoadMaterial("OcclusionMask");
             extractAlphaMat = LoadMaterial("ExtractAlpha");
             ignoreAlphaMat = LoadMaterial("IgnoreAlpha");
@@ -369,6 +372,8 @@ namespace Microsoft.MixedReality.SpectatorView
             SetShaderValues();
 
             SetOutputTextures();
+
+            SetupRenderPipeline();
         }
 
         private void Update()
@@ -446,6 +451,30 @@ namespace Microsoft.MixedReality.SpectatorView
             }
         }
 
+        private void SetupRenderPipeline()
+        {
+            // There seems to still be no macro to tell whether LWRP is used
+
+            string renderPipeline = GraphicsSettings.renderPipelineAsset?.GetType().FullName ?? "";
+            if (renderPipeline.Contains("LWRP"))
+            {
+                Type componentType = Type.GetType("UnityEngine.Rendering.LWRP.LWRPAdditionalCameraData, Unity.RenderPipelines.Lightweight.Runtime");
+                if (componentType != null)
+                    spectatorViewCamera.gameObject.AddComponent(componentType);
+
+                RenderPipelineManager.beginCameraRendering += (_, cam) =>
+                {
+                    if (cam == spectatorViewCamera)
+                        OnPreRender();
+                };
+                RenderPipelineManager.endCameraRendering += (_, cam) =>
+                {
+                    if (cam == spectatorViewCamera)
+                        StartCoroutine(OnPostRender());
+                };
+            }
+        }
+
         private void OnPreRender()
         {
             if (videoFeedColorCorrection.Enabled)
@@ -488,20 +517,16 @@ namespace Microsoft.MixedReality.SpectatorView
             {
                 occlusionMaskMat.SetTexture("_DepthTexture", depthTexture);
                 occlusionMaskMat.SetTexture("_BodyMaskTexture", bodyMaskTexture);
-                Graphics.Blit(sourceTexture, occlusionMaskTexture, occlusionMaskMat);
+                Graphics.Blit(sourceTexture, blurOcclusionTexture, occlusionMaskMat);
 
-                blurMat.SetFloat("_BlurSize", blurSize);
+                blurVerticalMat.SetFloat("_BlurSize", blurSize);
+                blurVerticalMat.SetTexture("_MaskTexture", blurOcclusionTexture);
+                blurHorizontalMat.SetFloat("_BlurSize", blurSize);
+                blurHorizontalMat.SetTexture("_MaskTexture", occlusionMaskTexture);
                 for (int i = 0; i < numBlurPasses || i < 1; i++)
                 {
-                    var source = i % 2 == 0 ? occlusionMaskTexture : blurOcclusionTexture;
-                    var dest = i % 2 == 0 ? blurOcclusionTexture : occlusionMaskTexture;
-                    blurMat.SetTexture("_MaskTexture", source);
-                    Graphics.Blit(source, dest, blurMat);
-                }
-
-                if (numBlurPasses % 2 == 0)
-                {
-                    Graphics.Blit(occlusionMaskTexture, blurOcclusionTexture);
+                    Graphics.Blit(blurOcclusionTexture, occlusionMaskTexture, blurVerticalMat);
+                    Graphics.Blit(occlusionMaskTexture, blurOcclusionTexture, blurHorizontalMat);
                 }
             }
 
@@ -547,7 +572,7 @@ namespace Microsoft.MixedReality.SpectatorView
             if (ShouldProduceQuadrantVideoFrame)
             {
                 CreateQuadrantTexture();
-                BlitQuadView(renderTexture, alphaTexture, colorRGBTexture, outputTexture, quadViewOutputTexture);
+                BlitQuadView(renderTexture, blurOcclusionTexture, colorRGBTexture, outputTexture, quadViewOutputTexture);
             }
             
             // Video texture.

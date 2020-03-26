@@ -43,14 +43,14 @@ Shader "SV/OcclusionMask"
 
             Texture2D _BodyMaskTexture;
             Texture2D _DepthTexture;
-            sampler2D_float _LastCameraDepthTexture;
+            sampler2D_float _CameraDepthTexture;
             SamplerState sampler_point_clamp;
 
             fixed4 frag (v2f i) : SV_Target
             {
                 half4 maskVal = fixed4(0,0,0,0);
 
-                float rawHologramDepth = SAMPLE_DEPTH_TEXTURE(_LastCameraDepthTexture, i.uv);
+                float rawHologramDepth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
                 float hologramDepth = LinearEyeDepth(rawHologramDepth);
                 float kinectDepth = _DepthTexture.Sample(sampler_point_clamp, float2(i.uv[0], 1-i.uv[1])).r * 65535 * 0.001; // Incoming texture is R16
 

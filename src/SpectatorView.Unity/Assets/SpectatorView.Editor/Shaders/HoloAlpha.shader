@@ -58,7 +58,7 @@ Shader "SV/HoloAlpha"
 
                 float alpha = occlusionAlpha * _Alpha;
 
-                fixed4 composite = backCol * (1 - alpha) + frontCol * alpha;
+                fixed4 composite = backCol * (1 - alpha * frontCol.a) + frontCol * alpha;
                 composite.a = 1.0f;
                 return composite;
             }
