@@ -560,7 +560,7 @@ namespace Microsoft.MixedReality.SpectatorView
             if (ShouldProduceQuadrantVideoFrame)
             {
                 CreateQuadrantTexture();
-                BlitQuadView(renderTexture, blurOcclusionTexture, colorRGBTexture, outputTexture, quadViewOutputTexture);
+                BlitQuadView(renderTexture, alphaTexture, colorRGBTexture, outputTexture, quadViewOutputTexture);
             }
             
             // Video texture.
